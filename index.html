@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BRITA 구독서비스 계산기</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9f9;
+      padding: 20px;
+      color: #003366;
+      max-width: 480px;
+      margin: auto;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .header h2 {
+      color: #005BAC;
+      font-size: 20px;
+      margin: 0;
+    }
+    .header img {
+      height: 40px;
+    }
+    label {
+      font-weight: 600;
+      margin-top: 10px;
+      display: block;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 2px solid #A6D9F7;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .result {
+      background: #E8F4FB;
+      border-left: 5px solid #00A3E0;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .result span {
+      font-size: 20px;
+      font-weight: bold;
+      color: #005BAC;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>구독서비스 계산기</h2>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Brita_logo_2023.svg/512px-Brita_logo_2023.svg.png" alt="BRITA Logo">
+  </div>
+
+  <label>품목</label>
+  <select id="item">
+    <option value="270000" data-vessel="0">150</option>
+    <option value="390000" data-vessel="460000">450</option>
+    <option value="420000" data-vessel="780000">600</option>
+    <option value="550000" data-vessel="1050000">1200</option>
+    <option value="420000" data-vessel="0">600 CTG</option>
+    <option value="550000" data-vessel="0">1200 CTG</option>
+  </select>
+
+  <label>계약기간</label>
+  <select id="contract">
+    <option value="12" data-discount="5">1년</option>
+    <option value="24" data-discount="15">2년</option>
+    <option value="36" data-discount="30" selected>3년</option>
+  </select>
+
+  <label>교체주기 (개월)</label>
+  <input type="number" id="cycle" value="6">
+
+  <div class="result">
+    📌 월 납부액 (VAT 포함): <span id="monthly"></span> 원<br>
+    💡 설치비 포함 시: <span id="withInstall"></span> 원
+  </div>
+
+  <script>
+    const item = document.getElementById('item');
+    const contract = document.getElementById('contract');
+    const cycle = document.getElementById('cycle');
+    const monthly = document.getElementById('monthly');
+    const withInstall = document.getElementById('withInstall');
+
+    function calc() {
+      const filter = parseInt(item.value);
+      const vessel = parseInt(item.selectedOptions[0].dataset.vessel);
+      const months = parseInt(contract.value);
+      const discount = parseFloat(contract.selectedOptions[0].dataset.discount);
+      const cycleVal = parseInt(cycle.value);
+
+      const discountRate = 1 - discount / 100;
+      const filterDisc = Math.floor(filter * discountRate);
+      const vesselDisc = Math.floor(vessel * discountRate);
+
+      const filterMonth = filterDisc / cycleVal;
+      const vesselMonth = vesselDisc / months;
+      const serviceFee = 1390;
+      const installFee = 100000 / months;
+
+      const base = filterMonth + vesselMonth + serviceFee;
+      const vat = Math.ceil(base * 1.1);
+      const totalWithInstall = Math.ceil((base + installFee) * 1.1);
+
+      monthly.innerText = vat.toLocaleString();
+      withInstall.innerText = totalWithInstall.toLocaleString();
+    }
+
+    item.onchange = contract.onchange = cycle.oninput = calc;
+    window.onload = calc;
+  </script>
+</body>
+</html>

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -60,18 +59,34 @@
 <body>
   <div class="header">
     <h2>구독서비스 계산기</h2>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Brita_logo_2023.svg/512px-Brita_logo_2023.svg.png" alt="BRITA Logo">
+    <img src="BRITA_Logo_3c_RGB.png" alt="BRITA Logo">
   </div>
 
-  <label>품목</label>
-  <select id="item">
-    <option value="270000" data-vessel="0">150</option>
-    <option value="390000" data-vessel="460000">450</option>
-    <option value="420000" data-vessel="780000">600</option>
-    <option value="550000" data-vessel="1050000">1200</option>
-    <option value="420000" data-vessel="0">600 CTG</option>
-    <option value="550000" data-vessel="0">1200 CTG</option>
-  </select>
+  <script>
+    const optionsHTML = `
+      <option value="">- 선택 -</option>
+      <option value="170000" data-vessel="0">C1000AC</option>
+      <option value="130000" data-vessel="0">C25</option>
+      <option value="180000" data-vessel="0">C50</option>
+      <option value="270000" data-vessel="0">C150</option>
+      <option value="400000" data-vessel="0">C300</option>
+      <option value="550000" data-vessel="0">C500</option>
+      <option value="390000" data-vessel="460000">450</option>
+      <option value="390000" data-vessel="0">450 CTG</option>
+      <option value="420000" data-vessel="780000">600</option>
+      <option value="420000" data-vessel="0">600 CTG</option>
+      <option value="550000" data-vessel="1050000">1200</option>
+      <option value="550000" data-vessel="0">1200 CTG</option>
+      <option value="80000" data-vessel="0">Head</option>
+      <option value="1200000" data-vessel="0">PURITY Quell ST 600 SET</option>
+      <option value="1600000" data-vessel="0">PURITY Quell ST 1200 SET</option>
+      <option value="420000" data-vessel="0">PURITY Quell ST 600 CTG</option>
+      <option value="550000" data-vessel="0">PURITY Quell ST 1200 CTG</option>
+      <option value="270000" data-vessel="0">PURITY Quell ST C150</option>
+      <option value="550000" data-vessel="0">PURITY Quell ST C500</option>`;
+  </script>
+
+  <div id="items-container"></div>
 
   <label>계약기간</label>
   <select id="contract">
@@ -89,29 +104,50 @@
   </div>
 
   <script>
-    const item = document.getElementById('item');
     const contract = document.getElementById('contract');
     const cycle = document.getElementById('cycle');
     const monthly = document.getElementById('monthly');
     const withInstall = document.getElementById('withInstall');
+    const itemsContainer = document.getElementById('items-container');
+
+    for (let i = 1; i <= 5; i++) {
+      const label = document.createElement('label');
+      label.textContent = `품목 ${i}`;
+      const select = document.createElement('select');
+      select.className = 'item';
+      select.innerHTML = optionsHTML;
+      itemsContainer.appendChild(label);
+      itemsContainer.appendChild(select);
+    }
 
     function calc() {
-      const filter = parseInt(item.value);
-      const vessel = parseInt(item.selectedOptions[0].dataset.vessel);
+      const selects = document.querySelectorAll('.item');
       const months = parseInt(contract.value);
       const discount = parseFloat(contract.selectedOptions[0].dataset.discount);
       const cycleVal = parseInt(cycle.value);
 
       const discountRate = 1 - discount / 100;
-      const filterDisc = Math.floor(filter * discountRate);
-      const vesselDisc = Math.floor(vessel * discountRate);
 
-      const filterMonth = filterDisc / cycleVal;
-      const vesselMonth = vesselDisc / months;
+      let totalFilterDisc = 0;
+      let totalVesselDisc = 0;
+
+      selects.forEach(select => {
+        const option = select.selectedOptions[0];
+        if (option && option.value !== "") {
+          const filter = parseInt(option.value);
+          const vessel = parseInt(option.dataset.vessel);
+          const filterDisc = Math.floor(filter * discountRate);
+          const vesselDisc = Math.floor(vessel * discountRate);
+
+          totalFilterDisc += filterDisc / cycleVal;
+          totalVesselDisc += vesselDisc / months;
+        }
+      });
+
       const serviceFee = 1390;
       const installFee = 100000 / months;
 
-      const base = filterMonth + vesselMonth + serviceFee;
+      const base = totalFilterDisc + totalVesselDisc + serviceFee;
       const vat = Math.ceil(base * 1.1);
       const totalWithInstall = Math.ceil((base + installFee) * 1.1);
 
@@ -119,7 +155,12 @@
       withInstall.innerText = totalWithInstall.toLocaleString();
     }
 
-    item.onchange = contract.onchange = cycle.oninput = calc;
+    document.addEventListener('change', e => {
+      if (e.target.classList.contains('item') || e.target === contract || e.target === cycle) {
+        calc();
+      }
+    });
+
     window.onload = calc;
   </script>
 </body>

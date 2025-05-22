@@ -84,10 +84,108 @@
   </style>
 </head>
 <body>
-<!-- 생략된 HTML은 그대로 유지 -->
-<script>
-// ... 기존 코드 유지 ...
+  <div class="header">
+    <h2>구독서비스 계산기</h2>
+    <img src="BRITA_Logo_3c_RGB.png" alt="BRITA Logo">
+  </div>
 
+  <div class="form-row">
+    <div class="form-group" style="flex: 2;">
+      <label>품목 선택</label>
+      <div id="items-container"></div>
+    </div>
+    <div class="form-group">
+      <label>계약기간</label>
+      <select id="contract">
+        <option value="12" data-discount="5">1년</option>
+        <option value="24" data-discount="15">2년</option>
+        <option value="36" data-discount="30" selected>3년</option>
+      </select>
+      <label>교체주기 (개월)</label>
+      <input type="number" id="cycle" value="6">
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>품목</th>
+        <th>필터단가</th>
+        <th>베셀단가</th>
+        <th>필터할인가</th>
+        <th>베셀할인가</th>
+        <th>합계</th>
+        <th>필터별 월납부액</th>
+      </tr>
+    </thead>
+    <tbody id="summary-table">
+      <tr><td colspan="7">선택된 품목이 없습니다.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="result">
+    📌 월 납부액 (VAT 포함): <span id="monthly"></span> 원<br>
+    💡 설치비 포함 시: <span id="withInstall"></span> 원
+  </div>
+
+  <script>
+    const productList = [
+      { name: "C1000AC", price: 170000, vessel: 0 },
+      { name: "C25", price: 130000, vessel: 0 },
+      { name: "C50", price: 180000, vessel: 0 },
+      { name: "C150", price: 270000, vessel: 0 },
+      { name: "C300", price: 400000, vessel: 0 },
+      { name: "C500", price: 550000, vessel: 0 },
+      { name: "450", price: 390000, vessel: 460000 },
+      { name: "450 CTG", price: 390000, vessel: 0 },
+      { name: "600", price: 420000, vessel: 780000 },
+      { name: "600 CTG", price: 420000, vessel: 0 },
+      { name: "1200", price: 550000, vessel: 1050000 },
+      { name: "1200 CTG", price: 550000, vessel: 0 },
+      { name: "Head", price: 80000, vessel: 0 },
+    ];
+
+    const contract = document.getElementById('contract');
+    const cycle = document.getElementById('cycle');
+    const monthly = document.getElementById('monthly');
+    const withInstall = document.getElementById('withInstall');
+    const itemsContainer = document.getElementById('items-container');
+    const summaryTable = document.getElementById('summary-table');
+
+    const selects = [];
+    for (let i = 0; i < 5; i++) {
+      const select = document.createElement('select');
+      select.className = 'item';
+      select.innerHTML = '<option value="">- 선택 -</option>' +
+        productList.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+      itemsContainer.appendChild(select);
+      selects.push(select);
+    }
+
+    function calc() {
+      const months = parseInt(contract.value);
+      const discount = parseFloat(contract.selectedOptions[0].dataset.discount);
+      const cycleVal = parseInt(cycle.value);
+      const discountRate = 1 - discount / 100;
+
+      summaryTable.innerHTML = "";
+      let totalFilterMonthly = 0;
+      let totalVesselMonthly = 0;
+      let anyItem = false;
+
+      selects.forEach(select => {
+        const itemName = select.value;
+        if (!itemName) {
+          const emptyRow = document.createElement('tr');
+          emptyRow.innerHTML = `<td colspan="7"></td>`;
+          summaryTable.appendChild(emptyRow);
+          return;
+        }
+        anyItem = true;
+
+        const item = productList.find(p => p.name === itemName);
+        const filterPrice = item.price;
+        const vesselPrice = item.vessel;
         const filterDiscount = Math.ceil(filterPrice * discountRate);
         const vesselDiscount = Math.ceil(vesselPrice * discountRate);
         const sum = filterDiscount + vesselDiscount;
@@ -96,11 +194,41 @@
         const monthlyVessel = Math.ceil(vesselDiscount / months);
         const monthlyFee = Math.ceil(monthlyFilter + monthlyVessel);
 
-// ... 이후 계산 결과도 모두 Math.ceil 적용 ...
+        totalFilterMonthly += monthlyFilter;
+        totalVesselMonthly += monthlyVessel;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${itemName}</td>
+          <td>${filterPrice.toLocaleString()}</td>
+          <td>${vesselPrice.toLocaleString()}</td>
+          <td>${filterDiscount.toLocaleString()}</td>
+          <td>${vesselDiscount.toLocaleString()}</td>
+          <td>${sum.toLocaleString()}</td>
+          <td>${monthlyFee.toLocaleString()}</td>
+        `;
+        summaryTable.appendChild(row);
+      });
+
+      if (!anyItem) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = `<td colspan="7">선택된 품목이 없습니다.</td>`;
+        summaryTable.appendChild(emptyRow);
+      }
+
+      const serviceFee = 1390;
+      const installFee = 100000 / months;
 
       const base = Math.ceil(totalFilterMonthly + totalVesselMonthly + serviceFee);
       const vat = Math.ceil(base * 1.1);
       const totalWithInstall = Math.ceil((base + Math.ceil(installFee)) * 1.1);
-</script>
+
+      monthly.innerText = vat.toLocaleString();
+      withInstall.innerText = totalWithInstall.toLocaleString();
+    }
+
+    document.addEventListener('change', calc);
+    window.onload = calc;
+  </script>
 </body>
 </html>

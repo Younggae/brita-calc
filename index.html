@@ -10,7 +10,7 @@
       background: #f9f9f9;
       padding: 20px;
       color: #003366;
-      max-width: 480px;
+      max-width: 800px;
       margin: auto;
     }
     .header {
@@ -21,11 +21,21 @@
     }
     .header h2 {
       color: #005BAC;
-      font-size: 20px;
+      font-size: 24px;
       margin: 0;
     }
     .header img {
       height: 40px;
+    }
+    .form-row {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .form-group {
+      flex: 1;
+      min-width: 180px;
     }
     label {
       font-weight: 600;
@@ -34,12 +44,12 @@
     }
     input, select {
       width: 100%;
-      padding: 10px;
+      padding: 8px;
       margin-top: 5px;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
       border: 2px solid #A6D9F7;
       border-radius: 8px;
-      font-size: 16px;
+      font-size: 15px;
     }
     .result {
       background: #E8F4FB;
@@ -54,6 +64,23 @@
       font-weight: bold;
       color: #005BAC;
     }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #A6D9F7;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
+    }
+    th {
+      background-color: #E0F2FF;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -62,41 +89,38 @@
     <img src="BRITA_Logo_3c_RGB.png" alt="BRITA Logo">
   </div>
 
-  <script>
-    const optionsHTML = `
-      <option value="">- 선택 -</option>
-      <option value="170000" data-vessel="0">C1000AC</option>
-      <option value="130000" data-vessel="0">C25</option>
-      <option value="180000" data-vessel="0">C50</option>
-      <option value="270000" data-vessel="0">C150</option>
-      <option value="400000" data-vessel="0">C300</option>
-      <option value="550000" data-vessel="0">C500</option>
-      <option value="390000" data-vessel="460000">450</option>
-      <option value="390000" data-vessel="0">450 CTG</option>
-      <option value="420000" data-vessel="780000">600</option>
-      <option value="420000" data-vessel="0">600 CTG</option>
-      <option value="550000" data-vessel="1050000">1200</option>
-      <option value="550000" data-vessel="0">1200 CTG</option>
-      <option value="80000" data-vessel="0">Head</option>
-      <option value="1200000" data-vessel="0">PURITY Quell ST 600 SET</option>
-      <option value="1600000" data-vessel="0">PURITY Quell ST 1200 SET</option>
-      <option value="420000" data-vessel="0">PURITY Quell ST 600 CTG</option>
-      <option value="550000" data-vessel="0">PURITY Quell ST 1200 CTG</option>
-      <option value="270000" data-vessel="0">PURITY Quell ST C150</option>
-      <option value="550000" data-vessel="0">PURITY Quell ST C500</option>`;
-  </script>
+  <div class="form-row">
+    <div class="form-group" style="flex: 2;">
+      <label>품목 선택</label>
+      <div id="items-container"></div>
+    </div>
+    <div class="form-group">
+      <label>계약기간</label>
+      <select id="contract">
+        <option value="12" data-discount="5">1년</option>
+        <option value="24" data-discount="15">2년</option>
+        <option value="36" data-discount="30" selected>3년</option>
+      </select>
+      <label>교체주기 (개월)</label>
+      <input type="number" id="cycle" value="6">
+    </div>
+  </div>
 
-  <div id="items-container"></div>
-
-  <label>계약기간</label>
-  <select id="contract">
-    <option value="12" data-discount="5">1년</option>
-    <option value="24" data-discount="15">2년</option>
-    <option value="36" data-discount="30" selected>3년</option>
-  </select>
-
-  <label>교체주기 (개월)</label>
-  <input type="number" id="cycle" value="6">
+  <table>
+    <thead>
+      <tr>
+        <th>품목</th>
+        <th>필터단가</th>
+        <th>베셀단가</th>
+        <th>필터할인가</th>
+        <th>베셀할인가</th>
+        <th>합계</th>
+        <th>필터별 월납부액</th>
+      </tr>
+    </thead>
+    <tbody id="summary-table">
+    </tbody>
+  </table>
 
   <div class="result">
     📌 월 납부액 (VAT 포함): <span id="monthly"></span> 원<br>
@@ -104,50 +128,81 @@
   </div>
 
   <script>
+    const productList = [
+      { name: "C1000AC", price: 170000, vessel: 0 },
+      { name: "C25", price: 130000, vessel: 0 },
+      { name: "C50", price: 180000, vessel: 0 },
+      { name: "C150", price: 270000, vessel: 0 },
+      { name: "C300", price: 400000, vessel: 0 },
+      { name: "C500", price: 550000, vessel: 0 },
+      { name: "450", price: 390000, vessel: 460000 },
+      { name: "450 CTG", price: 390000, vessel: 0 },
+      { name: "600", price: 420000, vessel: 780000 },
+      { name: "600 CTG", price: 420000, vessel: 0 },
+      { name: "1200", price: 550000, vessel: 1050000 },
+      { name: "1200 CTG", price: 550000, vessel: 0 },
+      { name: "Head", price: 80000, vessel: 0 },
+    ];
+
     const contract = document.getElementById('contract');
     const cycle = document.getElementById('cycle');
     const monthly = document.getElementById('monthly');
     const withInstall = document.getElementById('withInstall');
     const itemsContainer = document.getElementById('items-container');
+    const summaryTable = document.getElementById('summary-table');
 
-    for (let i = 1; i <= 5; i++) {
-      const label = document.createElement('label');
-      label.textContent = `품목 ${i}`;
+    const selects = [];
+    for (let i = 0; i < 5; i++) {
       const select = document.createElement('select');
       select.className = 'item';
-      select.innerHTML = optionsHTML;
-      itemsContainer.appendChild(label);
+      select.innerHTML = '<option value="">- 선택 -</option>' +
+        productList.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
       itemsContainer.appendChild(select);
+      selects.push(select);
     }
 
     function calc() {
-      const selects = document.querySelectorAll('.item');
       const months = parseInt(contract.value);
       const discount = parseFloat(contract.selectedOptions[0].dataset.discount);
       const cycleVal = parseInt(cycle.value);
-
       const discountRate = 1 - discount / 100;
 
-      let totalFilterDisc = 0;
-      let totalVesselDisc = 0;
+      summaryTable.innerHTML = "";
+      let totalFilterMonthly = 0;
+      let totalVesselMonthly = 0;
 
       selects.forEach(select => {
-        const option = select.selectedOptions[0];
-        if (option && option.value !== "") {
-          const filter = parseInt(option.value);
-          const vessel = parseInt(option.dataset.vessel);
-          const filterDisc = Math.floor(filter * discountRate);
-          const vesselDisc = Math.floor(vessel * discountRate);
+        const itemName = select.value;
+        if (!itemName) return;
 
-          totalFilterDisc += filterDisc / cycleVal;
-          totalVesselDisc += vesselDisc / months;
-        }
+        const item = productList.find(p => p.name === itemName);
+        const filterPrice = item.price;
+        const vesselPrice = item.vessel;
+        const filterDiscount = Math.floor(filterPrice * discountRate);
+        const vesselDiscount = Math.floor(vesselPrice * discountRate);
+        const sum = filterDiscount + vesselDiscount;
+        const monthlyFee = Math.ceil(sum / cycleVal);
+
+        totalFilterMonthly += filterDiscount / cycleVal;
+        totalVesselMonthly += vesselDiscount / months;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${itemName}</td>
+          <td>${filterPrice.toLocaleString()}</td>
+          <td>${vesselPrice.toLocaleString()}</td>
+          <td>${filterDiscount.toLocaleString()}</td>
+          <td>${vesselDiscount.toLocaleString()}</td>
+          <td>${sum.toLocaleString()}</td>
+          <td>${monthlyFee.toLocaleString()}</td>
+        `;
+        summaryTable.appendChild(row);
       });
 
       const serviceFee = 1390;
       const installFee = 100000 / months;
 
-      const base = totalFilterDisc + totalVesselDisc + serviceFee;
+      const base = totalFilterMonthly + totalVesselMonthly + serviceFee;
       const vat = Math.ceil(base * 1.1);
       const totalWithInstall = Math.ceil((base + installFee) * 1.1);
 
@@ -155,12 +210,7 @@
       withInstall.innerText = totalWithInstall.toLocaleString();
     }
 
-    document.addEventListener('change', e => {
-      if (e.target.classList.contains('item') || e.target === contract || e.target === cycle) {
-        calc();
-      }
-    });
-
+    document.addEventListener('change', calc);
     window.onload = calc;
   </script>
 </body>

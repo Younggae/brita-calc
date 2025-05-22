@@ -119,6 +119,7 @@
       </tr>
     </thead>
     <tbody id="summary-table">
+      <tr><td colspan="7">선택된 품목이 없습니다.</td></tr>
     </tbody>
   </table>
 
@@ -170,10 +171,17 @@
       summaryTable.innerHTML = "";
       let totalFilterMonthly = 0;
       let totalVesselMonthly = 0;
+      let anyItem = false;
 
       selects.forEach(select => {
         const itemName = select.value;
-        if (!itemName) return;
+        if (!itemName) {
+          const emptyRow = document.createElement('tr');
+          emptyRow.innerHTML = `<td colspan="7"></td>`;
+          summaryTable.appendChild(emptyRow);
+          return;
+        }
+        anyItem = true;
 
         const item = productList.find(p => p.name === itemName);
         const filterPrice = item.price;
@@ -181,10 +189,13 @@
         const filterDiscount = Math.floor(filterPrice * discountRate);
         const vesselDiscount = Math.floor(vesselPrice * discountRate);
         const sum = filterDiscount + vesselDiscount;
-        const monthlyFee = Math.ceil(sum / cycleVal);
 
-        totalFilterMonthly += filterDiscount / cycleVal;
-        totalVesselMonthly += vesselDiscount / months;
+        const monthlyFilter = filterDiscount / cycleVal;
+        const monthlyVessel = vesselDiscount / (months);
+        const monthlyFee = Math.ceil(monthlyFilter + monthlyVessel);
+
+        totalFilterMonthly += monthlyFilter;
+        totalVesselMonthly += monthlyVessel;
 
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -198,6 +209,12 @@
         `;
         summaryTable.appendChild(row);
       });
+
+      if (!anyItem) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = `<td colspan="7">선택된 품목이 없습니다.</td>`;
+        summaryTable.appendChild(emptyRow);
+      }
 
       const serviceFee = 1390;
       const installFee = 100000 / months;
